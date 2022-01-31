@@ -4,8 +4,8 @@ import (
 	"context"
 	"elibrary/pkg/model"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 )
 
@@ -13,6 +13,7 @@ const SongsCollection = "songs"
 
 type SongsRepository interface {
 	CreateSongs(ctx context.Context, songs model.Songs) (string, error)
+	SetLabelToSongs(ctx context.Context, labelsName string, songsName string) error
 }
 
 type songsRepository struct {
@@ -26,11 +27,18 @@ func NewSongsRepository(db *mongo.Database) SongsRepository {
 	}
 }
 
+func (s songsRepository) SetLabelToSongs(ctx context.Context, labelsName string, songsName string) error {
+	filter := bson.M{"name": songsName}
+	update := bson.M{"$set": bson.M{"labels": labelsName}}
+	err := s.col.FindOneAndUpdate(ctx, filter, update, options.FindOneAndUpdate().SetUpsert(true)).Err()
+	if err != mongo.ErrNoDocuments && err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *songsRepository) CreateSongs(ctx context.Context, songs model.Songs) (string, error) {
-	songs.ID = primitive.NewObjectID().Hex()
 	doc := bson.M{
-		"_id":         songs.ID,
-		"id":          songs.ID,
 		"name":        songs.Name,
 		"description": songs.Description,
 	}
@@ -39,5 +47,5 @@ func (s *songsRepository) CreateSongs(ctx context.Context, songs model.Songs) (s
 		log.Fatal(err)
 		return "", err
 	}
-	return songs.ID, err
+	return "", err
 }

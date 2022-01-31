@@ -4,8 +4,8 @@ import (
 	"context"
 	"elibrary/pkg/model"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 )
 
@@ -13,21 +13,29 @@ const BooksCollection = "books"
 
 type BooksRepository interface {
 	CreateBooks(ctx context.Context, books model.Books) (string, error)
+	SetLabelToBooks(ctx context.Context, labelsName string, booksName string) error
 }
 
-type bookRepository struct {
+type booksRepository struct {
 	collection *mongo.Collection
 }
 
 func NewBookRepository(db *mongo.Database) BooksRepository {
-	return &bookRepository{collection: db.Collection(BooksCollection)}
+	return &booksRepository{collection: db.Collection(BooksCollection)}
 }
 
-func (b *bookRepository) CreateBooks(ctx context.Context, books model.Books) (string, error) {
-	books.ID = primitive.NewObjectID().Hex()
+func (b booksRepository) SetLabelToBooks(ctx context.Context, labelsName string, booksName string) error {
+	filter := bson.M{"name": booksName}
+	update := bson.M{"$set": bson.M{"labels": labelsName}}
+	err := b.collection.FindOneAndUpdate(ctx, filter, update, options.FindOneAndUpdate().SetUpsert(true)).Err()
+	if err != mongo.ErrNoDocuments && err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *booksRepository) CreateBooks(ctx context.Context, books model.Books) (string, error) {
 	doc := bson.M{
-		"_id":         books.ID,
-		"id":          books.ID,
 		"name":        books.Name,
 		"description": books.Description,
 	}
@@ -36,6 +44,5 @@ func (b *bookRepository) CreateBooks(ctx context.Context, books model.Books) (st
 		log.Fatal(err)
 		return "", err
 	}
-	return books.ID, err
+	return "", err
 }
-

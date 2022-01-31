@@ -13,6 +13,7 @@ const LabelCollection = "labels"
 
 type LabelsRepository interface {
 	InsertMany(ctx context.Context, docs []interface{}) (string, error)
+	Upsert(ctx context.Context, filter interface{}, update interface{}) error
 	Find(ctx context.Context, query interface{}, opts ...*options.FindOptions) (labels []model.Label, err error)
 }
 
@@ -25,6 +26,10 @@ func NewLabelsRepository(db *mongo.Database) LabelsRepository {
 		col: db.Collection(LabelCollection),
 	}
 }
+func (l labelsRepository) getCollection(db *mongo.Database, col string) *mongo.Collection {
+	return db.Collection(col)
+}
+
 func (l labelsRepository) Find(ctx context.Context, query interface{}, opts ...*options.FindOptions) (labels []model.Label, err error) {
 	res, err := l.col.Find(ctx, query, opts...)
 	if err = res.All(ctx, &labels); err != nil {
@@ -32,6 +37,16 @@ func (l labelsRepository) Find(ctx context.Context, query interface{}, opts ...*
 		return nil, err
 	}
 	return labels, err
+}
+
+func (l *labelsRepository) Upsert(ctx context.Context, filter interface{}, update interface{}) error {
+	res, err := l.col.UpdateOne(ctx, filter, update,options.Update().SetUpsert(true))
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	fmt.Printf("upsert document ID %v", res.UpsertedID)
+	return err
 }
 
 func (l *labelsRepository) InsertMany(ctx context.Context, docs []interface{}) (string, error) {

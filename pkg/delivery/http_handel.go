@@ -24,9 +24,23 @@ func HttpHandel(e *echo.Echo, usBooks usecase.BooksUseCase, usSongs usecase.Song
 	e.GET("/labels", handle.GetListLabels)
 	e.POST("/books/create", handle.CreateBooks)
 	e.POST("/songs/create", handle.CreateSongs)
-	e.GET("/labels/generate/:total", handle.Generate)
+	e.GET("/labels/generate/:total", handle.GenerateLabels)
+	e.POST("/labels/set", handle.SetLabels)
 }
-func (h handle) Generate(c echo.Context) error {
+func (h handle) SetLabels(c echo.Context) error {
+	req := model.SetLabelsRequest{}
+	err := c.Bind(&req)
+	if err != nil {
+		log.Fatal(err)
+		return model.ResponseWithError(c, err)
+	}
+	err = h.ucLabels.SetLabels(context.Background(), req)
+	if err != nil {
+		return model.ResponseWithError(c, err)
+	}
+	return model.ResponseSuccess(c, nil)
+}
+func (h handle) GenerateLabels(c echo.Context) error {
 	total := c.Param("total")
 	intTotal, err := strconv.ParseInt(total, 10, 32)
 	if err != nil {
@@ -67,6 +81,7 @@ func (h *handle) GetListLabels(c echo.Context) error {
 	}
 	return model.ResponseSuccess(c, res)
 }
+
 func (h *handle) CreateBooks(c echo.Context) error {
 	var err error
 	book := model.Books{}

@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 )
@@ -15,14 +14,59 @@ import (
 type LabelsUseCase interface {
 	GenericsLabels(ctx context.Context, totalLabels int) error
 	GetListLabels(ctx context.Context, page int64, size int64) (lables []model.Label, err error)
+	SetLabels(ctx context.Context, request model.SetLabelsRequest) error
 }
 
 type labelsUseCase struct {
 	labelsRepo repository.LabelsRepository
+	combosRepo repository.CombosRepository
+	songsRepo  repository.SongsRepository
+	booksRepo  repository.BooksRepository
 }
 
-func NewLabelsUseCase(labelsRepo repository.LabelsRepository) LabelsUseCase {
-	return &labelsUseCase{labelsRepo: labelsRepo}
+func NewLabelsUseCase(
+	labelsRepo repository.LabelsRepository,
+	combosRepo repository.CombosRepository,
+	songsRepo repository.SongsRepository,
+	booksRepo repository.BooksRepository) LabelsUseCase {
+	return &labelsUseCase{
+		labelsRepo: labelsRepo,
+		combosRepo: combosRepo,
+		songsRepo:  songsRepo,
+		booksRepo:  booksRepo,
+	}
+}
+
+func (l labelsUseCase) SetLabels(ctx context.Context, request model.SetLabelsRequest) error {
+	if request.Labels == "" {
+		return errors.New("labels is not nil")
+	}
+
+	//set label to songs
+	if request.Songs != "" {
+		err := l.songsRepo.SetLabelToSongs(ctx, request.Labels, request.Songs)
+		if err != nil {
+			log.Fatal(fmt.Sprintf("l.songsRepo.SetLabelToSongs error:%s", err))
+		}
+	}
+
+	//set label to songs
+	if request.Books != "" {
+		err := l.booksRepo.SetLabelToBooks(ctx, request.Labels, request.Books)
+		if err != nil {
+			log.Fatal(fmt.Sprintf("l.songsRepo.SetLabelToBooks error:%s", err))
+		}
+	}
+
+	//add new combos
+	if request.Songs != "" && request.Books != "" && request.Labels != "" {
+		err := l.combosRepo.UpsertCombos(ctx, model.Combos{Songs: request.Songs, Books: request.Books}, request.Labels)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	}
+	return nil
 }
 
 func (l labelsUseCase) GenericsLabels(ctx context.Context, totalLabels int) error {
@@ -31,10 +75,8 @@ func (l labelsUseCase) GenericsLabels(ctx context.Context, totalLabels int) erro
 	}
 	var docs []interface{}
 	for i := 1; i <= totalLabels; i++ {
-		id := primitive.NewObjectID().Hex()
+		//id := primitive.NewObjectID().Hex()
 		docs = append(docs, bson.M{
-			"_id":         id,
-			"id":          id,
 			"name":        fmt.Sprintf("labels%v", i),
 			"description": fmt.Sprintf("description labels%v", i),
 		})

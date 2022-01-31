@@ -22,9 +22,10 @@ func main() {
 	booksRepo := repository.NewBookRepository(db)
 	songsRepo := repository.NewSongsRepository(db)
 	labelsRepo := repository.NewLabelsRepository(db)
+	combosRepo := repository.NewCombosRepository(db)
 	booksUc := usecase.NewBookUseCase(booksRepo)
 	songsUc := usecase.NewSongsUseCase(songsRepo)
-	labelsUc := usecase.NewLabelsUseCase(labelsRepo)
+	labelsUc := usecase.NewLabelsUseCase(labelsRepo, combosRepo, songsRepo, booksRepo)
 	delivery.HttpHandel(e, booksUc, songsUc, labelsUc)
 	e.Logger.Fatal(e.Start(":8088"))
 }
