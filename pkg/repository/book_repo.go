@@ -14,6 +14,7 @@ const BooksCollection = "books"
 type BooksRepository interface {
 	CreateBooks(ctx context.Context, books model.Books) (string, error)
 	SetLabelToBooks(ctx context.Context, labelsName string, booksName string) error
+	FindOne(ctx context.Context, filter interface{}, options *options.FindOneOptions) model.Books
 }
 
 type booksRepository struct {
@@ -24,6 +25,14 @@ func NewBookRepository(db *mongo.Database) BooksRepository {
 	return &booksRepository{collection: db.Collection(BooksCollection)}
 }
 
+func (b booksRepository) FindOne(ctx context.Context, filter interface{}, options *options.FindOneOptions) model.Books {
+	var books model.Books
+	err := b.collection.FindOne(ctx, filter, options).Decode(&books)
+	if err != mongo.ErrNoDocuments && err != nil {
+		log.Fatal(err)
+	}
+	return books
+}
 func (b booksRepository) SetLabelToBooks(ctx context.Context, labelsName string, booksName string) error {
 	filter := bson.M{"name": booksName}
 	update := bson.M{"$set": bson.M{"labels": labelsName}}

@@ -14,6 +14,7 @@ const SongsCollection = "songs"
 type SongsRepository interface {
 	CreateSongs(ctx context.Context, songs model.Songs) (string, error)
 	SetLabelToSongs(ctx context.Context, labelsName string, songsName string) error
+	FindOne(ctx context.Context, filter interface{}, options *options.FindOneOptions) model.Songs
 }
 
 type songsRepository struct {
@@ -25,6 +26,14 @@ func NewSongsRepository(db *mongo.Database) SongsRepository {
 	return &songsRepository{
 		col: db.Collection(SongsCollection),
 	}
+}
+func (s songsRepository) FindOne(ctx context.Context, filter interface{}, options *options.FindOneOptions) model.Songs {
+	var song model.Songs
+	err := s.col.FindOne(ctx, filter, options).Decode(&song)
+	if err != mongo.ErrNoDocuments && err != nil {
+		log.Fatal(err)
+	}
+	return song
 }
 
 func (s songsRepository) SetLabelToSongs(ctx context.Context, labelsName string, songsName string) error {

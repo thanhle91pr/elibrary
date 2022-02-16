@@ -16,16 +16,28 @@ type handle struct {
 }
 
 func HttpHandel(e *echo.Echo, usBooks usecase.BooksUseCase, usSongs usecase.SongsUseCase, ucLabels usecase.LabelsUseCase) {
-	handle := &handle{
+	h := &handle{
 		usBooks:  usBooks,
 		usSongs:  usSongs,
 		ucLabels: ucLabels,
 	}
-	e.GET("/labels", handle.GetListLabels)
-	e.POST("/books/create", handle.CreateBooks)
-	e.POST("/songs/create", handle.CreateSongs)
-	e.GET("/labels/generate/:total", handle.GenerateLabels)
-	e.POST("/labels/set", handle.SetLabels)
+	e.GET("/labels", h.GetListLabels)
+	e.POST("/books/create", h.CreateBooks)
+	e.POST("/songs/create", h.CreateSongs)
+	e.GET("/labels/generate/:total", h.GenerateLabels)
+	e.POST("/labels/set", h.SetLabels)
+	e.GET("/labels/find", h.FindLabels)
+}
+
+func (h handle) FindLabels(c echo.Context) error {
+	req := model.FindLabelsRequest{}
+	err := c.Bind(&req)
+	if err != nil {
+		log.Fatal(err)
+		return model.ResponseWithError(c, err)
+	}
+	labels := h.ucLabels.FindLabels(context.Background(), req)
+	return model.ResponseSuccess(c, labels)
 }
 func (h handle) SetLabels(c echo.Context) error {
 	req := model.SetLabelsRequest{}

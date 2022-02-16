@@ -1,12 +1,11 @@
 package model
 
 type Label struct {
-	ID          string   `json:"id" bson:"id"`
-	Name        string   `json:"name" bson:"name"`
-	Description string   `json:"description" bson:"description"`
-	Books       string   `json:"books" bson:"books"`
-	Songs       string   `json:"songs" bson:"songs"`
-	Combos      []string `json:"combos" bson:"combos"`
+	ID          string `json:"id" bson:"id"`
+	Name        string `json:"name" bson:"name"`
+	Description string `json:"description" bson:"description"`
+	Books       string `json:"books" bson:"books"`
+	Songs       string `json:"songs" bson:"songs"`
 }
 
 type GetListLabelsReq struct {
@@ -15,7 +14,12 @@ type GetListLabelsReq struct {
 }
 
 type SetLabelsRequest struct {
-	Labels string `json:"labels"`
-	Books string `json:"books"`
-	Songs string `json:"songs"`
+	Label string `json:"label"`
+	Book  string `json:"book"`
+	Songs string `json:"song"`
+}
+
+type FindLabelsRequest struct {
+	Books string `json:"book" query:"book"`
+	Song  string `json:"song" query:"song"`
 }
