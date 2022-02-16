@@ -2,8 +2,8 @@ package model
 
 type Label struct {
 	ID          string `json:"id" bson:"id"`
-	Name        string `json:"name" bson:"name"`
-	Description string `json:"description" bson:"description"`
+	Name        string `json:"name" bson:"name" validate:"presence,min=1,max=100"`
+	Description string `json:"description" bson:"description" validate:"presence,min=1,max=200"`
 	Books       string `json:"books" bson:"books"`
 	Songs       string `json:"songs" bson:"songs"`
 }
